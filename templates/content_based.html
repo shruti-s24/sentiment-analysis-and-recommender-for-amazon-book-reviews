@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Content-Based Filtering{% endblock %}
+
+{% block content %}
+<h2>📖 Find Similar Books</h2>
+
+<p>Enter a book title to find similar books based on description & themes.</p>
+
+<br>
+
+<input id="bookInput" type="text" placeholder="Enter book title..." style="width:100%; padding:10px; font-size:1.1em;">
+<br><br>
+<button id="searchBtn" class="nav-button">Find Similar Books</button>
+
+<div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Searching similar books... Please wait.</p>
+</div>
+
+<div id="results"></div>
+<div id="error" class="error"></div>
+
+<script>
+document.getElementById("searchBtn").onclick = function() {
+    const title = document.getElementById("bookInput").value.trim();
+    if(!title) return;
+
+    document.getElementById("loading").classList.add("active");
+    document.getElementById("error").classList.remove("active");
+    document.getElementById("results").innerHTML = "";
+
+    fetch("/api/run-content-based", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({book_title: title})
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById("loading").classList.remove("active");
+        if(!data.success){
+            document.getElementById("error").classList.add("active");
+            document.getElementById("error").innerText = data.error;
+            return;
+        }
+
+        let html = `<h3>Matched: ${data.matched_title}</h3><h4>🔑 Keywords: ${data.keywords.join(", ")}</h4><br><h3>📚 Similar Books:</h3><ul>`;
+        
+        data.recommendations.forEach(r => {
+            html += `<li>${r.rank}. ${r.title} — <i>${r.author}</i> (${(r.similarity*100).toFixed(1)}% match)</li>`;
+        });
+
+        html += `</ul>`;
+        document.getElementById("results").innerHTML = html;
+    });
+};
+</script>
+{% endblock %}

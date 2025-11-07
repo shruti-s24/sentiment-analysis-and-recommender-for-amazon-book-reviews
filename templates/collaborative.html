@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Collaborative Filtering{% endblock %}
+
+{% block content %}
+<h2>🤝 Collaborative Filtering Recommendations</h2>
+<p>This method recommends books based on similar users’ preferences.</p>
+
+<br>
+
+<button id="runBtn" class="nav-button">Generate Recommendations</button>
+
+<div id="loading" class="loading">
+    <div class="spinner"></div>
+    <p>Generating recommendations... This may take ~1 minute</p>
+</div>
+
+<div id="results"></div>
+
+<div id="error" class="error"></div>
+
+<script>
+document.getElementById("runBtn").onclick = function() {
+    document.getElementById("loading").classList.add("active");
+    document.getElementById("error").classList.remove("active");
+    document.getElementById("results").innerHTML = "";
+
+    fetch("/api/run-collaborative", {method: "POST"})
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById("loading").classList.remove("active");
+        if(!data.success){
+            document.getElementById("error").classList.add("active");
+            document.getElementById("error").innerText = data.error;
+            return;
+        }
+
+        let html = `<h3>👤 User: ${data.user.name} (${data.user.id})</h3>`;
+        html += `<h4>Model RMSE: ${data.model.rmse}</h4>`;
+        html += `<h3>📚 Recommendations:</h3><ul>`;
+
+        data.recommendations.forEach(r => {
+            html += `<li>${r.rank}. ${r.title} — <i>${r.author}</i> (Score: ${r.score.toFixed(2)})</li>`;
+        });
+
+        html += `</ul>`;
+        document.getElementById("results").innerHTML = html;
+    });
+};
+</script>
+{% endblock %}
