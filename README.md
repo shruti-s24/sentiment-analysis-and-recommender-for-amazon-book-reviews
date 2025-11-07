@@ -39,6 +39,7 @@ Dataset used:
 [https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews](https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews)
 
 Extract and upload to HDFS:
+In my case the csv files were saved in Downloads, use the filepath where you have extracted the dataset.
 
 ```bash
 hdfs dfs -mkdir /data
@@ -46,7 +47,6 @@ hdfs dfs -mkdir /data/amazon_book_reviews
 
 hdfs dfs -put /mnt/c/Users/shrut/Downloads/Books_rating.csv /data/amazon_book_reviews
 hdfs dfs -put /mnt/c/Users/shrut/Downloads/books_data.csv /data/amazon_book_reviews
-hdfs dfs -put /mnt/c/Users/shrut/Downloads/amazon_books_merged.csv /data/amazon_book_reviews
 ```
 
 Check:
