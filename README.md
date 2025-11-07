@@ -1,7 +1,6 @@
 ---
 
-# Book Recommendation System (Hadoop + Spark + Flask UI)
-
+# 📚 Book Recommendation System (Hadoop + Spark + Flask UI)
 **Book Recommendation System** built using:
 
 * **Apache Hadoop + HDFS** for distributed storage
