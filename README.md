@@ -1,48 +1,55 @@
 ---
 
 # 📚 Book Recommendation System (Hadoop + Spark + Flask UI)
-**Book Recommendation System** built using:
 
-* **Apache Hadoop + HDFS** for distributed storage
-* **Apache Spark** for data processing + model training
-* **ALS Collaborative Filtering** for personalized recommendations
-* **TF-IDF Content-Based Filtering** for similarity search
-* **Google Books API** to enrich missing descriptions
-* **Flask Web Interface** for a clean UI
+A scalable Book Recommendation System using:
 
----
-
-## 📦 Dataset Used
-
-We use the Amazon Books Review dataset from Kaggle:
-
-🔗 [https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews](https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews)
-
-Download and extract:
-
-```bash
-mkdir -p ~/datasets/books
-unzip amazon-books-reviews.zip -d ~/datasets/books
-```
-
-Upload to HDFS:
-
-```bash
-hdfs dfs -mkdir -p /data/amazon_book_reviews
-hdfs dfs -put ~/datasets/books/*.csv /data/amazon_book_reviews
-```
+* **HDFS + Hadoop** for distributed storage
+* **Spark** for preprocessing and model training
+* **ALS Collaborative Filtering** for personalization
+* **TF-IDF Content Recommendation** for similarity search
+* **Google Books API** for enriching missing book descriptions
+* **Flask Web Interface** for user interaction
 
 ---
 
-## 🗂 Required CSVs in HDFS
+## 1️⃣ Install Hadoop & HDFS (WSL Users)
 
-| File                    | Purpose          |
-| ----------------------- | ---------------- |
-| Books_rating.csv        | User ratings     |
-| books_data.csv          | Book metadata    |
-| amazon_books_merged.csv | Combined dataset |
+Follow this guide to install Hadoop:
+[https://dev.to/samujjwaal/hadoop-installation-on-windows-10-using-wsl-2ck1](https://dev.to/samujjwaal/hadoop-installation-on-windows-10-using-wsl-2ck1)
 
-Ensure they exist:
+Start Hadoop services:
+
+```bash
+start-dfs.sh
+start-yarn.sh
+```
+
+Verify:
+
+```bash
+hdfs dfs -ls /
+```
+
+---
+
+## 2️⃣ Download Dataset
+
+Dataset used:
+[https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews](https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews)
+
+Extract and upload to HDFS:
+
+```bash
+hdfs dfs -mkdir /data
+hdfs dfs -mkdir /data/amazon_book_reviews
+
+hdfs dfs -put /mnt/c/Users/shrut/Downloads/Books_rating.csv /data/amazon_book_reviews
+hdfs dfs -put /mnt/c/Users/shrut/Downloads/books_data.csv /data/amazon_book_reviews
+hdfs dfs -put /mnt/c/Users/shrut/Downloads/amazon_books_merged.csv /data/amazon_book_reviews
+```
+
+Check:
 
 ```bash
 hdfs dfs -ls /data/amazon_book_reviews
@@ -50,17 +57,24 @@ hdfs dfs -ls /data/amazon_book_reviews
 
 ---
 
-## 🔐 Google Books API Setup (Required for Description Enrichment)
+## 3️⃣ Python Environment Setup
 
-1. Go to Google Cloud Console
-   [https://console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+```bash
+python3 -m venv pyenv
+source pyenv/bin/activate
 
-2. Create an **API Key**
+pip install --upgrade pip
+pip install pyspark nltk pandas numpy scikit-learn tqdm vaderSentiment flask
+```
 
-3. Enable:
-   ✅ **Books API**
+---
 
-4. Save the key permanently to your shell profile:
+## 4️⃣ Google Books API Setup (required for description enrichment)
+
+1. Go to: [https://console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+2. Create **API Key**
+3. Enable **Books API**
+4. Save key in your environment:
 
 ```bash
 echo 'export GOOGLE_BOOKS_API="<YOUR_API_KEY_HERE>"' >> ~/.bashrc
@@ -73,129 +87,81 @@ Confirm:
 echo $GOOGLE_BOOKS_API
 ```
 
-This environment variable is automatically used by `enrich_desc.py` and `content-filter.py`.
-
 ---
 
-## 🖥️ Python Environment Setup
+## 5️⃣ Data Processing Pipeline (Run in this exact order)
+
+### Step 1: Merge Datasets
 
 ```bash
-python3 -m venv pyenv
-source pyenv/bin/activate
-
-pip install --upgrade pip
-pip install pyspark nltk pandas numpy scikit-learn tqdm vaderSentiment flask
-```
-
----
-
-## 🧱 Hadoop + HDFS Setup (WSL Users)
-
-Follow this guide:
-
-🔗 [https://dev.to/samujjwaal/hadoop-installation-on-windows-10-using-wsl-2ck1](https://dev.to/samujjwaal/hadoop-installation-on-windows-10-using-wsl-2ck1)
-
-Start Hadoop:
-
-```bash
-start-dfs.sh
-start-yarn.sh
-```
-
-Check:
-
-```bash
-hdfs dfs -ls /
-```
-
----
-
-## 🔀 Data Processing Pipeline
-
-### 1️⃣ Merge
-
-```bash
+nano merge.py
 spark-submit merge.py
 ```
 
-### 2️⃣ Preprocess
+### Step 2: Preprocess
 
 ```bash
+nano preprocessv1.py
 spark-submit preprocessv1.py
 ```
 
-### 3️⃣ Sentiment Scoring
+### Step 3: Sentiment Analysis
 
 ```bash
+nano amazon_books_sentiment.py
 spark-submit amazon_books_sentiment.py
 ```
 
-### 4️⃣ Final Cleanup
+### Step 4: Final Preprocessing for Recommendation Models
 
 ```bash
+nano finalpreprocess.py
 spark-submit finalpreprocess.py
 ```
 
 ---
 
-## 🤝 Collaborative Filtering
+## 6️⃣ Content Description Enrichment (Run Only Once)
+
+Adds missing descriptions using Google Books API:
 
 ```bash
-spark-submit colab-filter.py
-```
-
----
-
-## 📖 Content-Based Filtering
-
-### (Run once to enrich descriptions using Google Books API)
-
-```bash
+nano enrich_desc.py
 spark-submit enrich_desc.py
 ```
 
-### Run recommender:
+---
+
+## 7️⃣ Run the Recommenders
+
+### Collaborative Filtering (User-Based)
 
 ```bash
-spark-submit content-filter.py "Harry Potter"
+nano colab-filter.py
+spark-submit colab-filter.py
+```
+
+### Content-Based Filtering (Book Similarity)
+
+```bash
+nano content-filter.py
+spark-submit content-filter.py "BOOK_NAME"
 ```
 
 ---
 
-## 🌐 Web UI
+## 8️⃣ Launch Web Interface
 
 ```bash
 python3 app.py
 ```
 
-Open in browser:
+Navigate to:
 
 ```
 http://localhost:5000
 ```
 
 ---
-
-## 📂 Project Structure
-
-```
-├── app.py                        # Flask UI
-├── colab-filter.py               # Collaborative filtering model
-├── content-filter.py             # Content-based recommendations
-├── enrich_desc.py                # Google Books description enrichment
-├── preprocessv1.py
-├── amazon_books_sentiment.py
-├── finalpreprocess.py
-├── merge.py
-├── templates/                    # UI HTML
-├── logs/                         # Saved logs
-└── results/                      # Stored responses
-```
-
----
-
 ## Author
-
-Shruti S
-
-If you found this useful, ⭐ star the repo!
+Shruti
