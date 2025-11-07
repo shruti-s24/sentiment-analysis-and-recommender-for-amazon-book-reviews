@@ -1,102 +1,139 @@
+---
+
 # 📚 Book Recommendation System (Hadoop + Spark + Flask UI)
 
-A complete end-to-end **Book Recommender System** built using:
+A scalable, end-to-end **Book Recommendation System** built using:
 
-* **HDFS + Hadoop** for distributed storage
-* **Apache Spark** for data processing
+* **Apache Hadoop + HDFS** for distributed storage
+* **Apache Spark** for data processing + model training
 * **ALS Collaborative Filtering** for personalized recommendations
-* **TF-IDF Content-Based Filtering** for similar-book lookup
-* **Flask Web Interface** for easy user interaction
+* **TF-IDF Content-Based Filtering** for similarity search
+* **Google Books API** to enrich missing descriptions
+* **Flask Web Interface** for a clean UI
 
 ---
 
-## 🚀 Features
+## 📦 Dataset Used
 
-| Feature                        | Description                                         |
-| ------------------------------ | --------------------------------------------------- |
-| **Collaborative Filtering**    | Recommends books based on similar users (ALS model) |
-| **Content-Based Filtering**    | Recommends similar books based on descriptions      |
-| **Sentiment-Enhanced Ratings** | Book ratings boosted by text sentiment              |
-| **Interactive Web UI**         | Clean and modern HTML frontend using Flask          |
-| **HDFS + Spark**               | Distributed scalable big-data processing            |
+We use the Amazon Books Review dataset from Kaggle:
 
----
+🔗 [https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews](https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews)
 
-## 🖥️ System Requirements
-
-* Windows / Linux / Mac
-* Python **3.8+**
-* Java **8+**
-* **Hadoop** + **HDFS**
-* **Apache Spark** 3.x
-
----
-
-## Dataset used
-https://www.kaggle.com/datasets/mohamedbakhet/amazon-books-reviews
-
----
-
-## ⚙️ Hadoop Setup (Windows WSL)
-
-Follow this guide to install Hadoop on WSL:
-
-[https://dev.to/samujjwaal/hadoop-installation-on-windows-10-using-wsl-2ck1](https://dev.to/samujjwaal/hadoop-installation-on-windows-10-using-wsl-2ck1)
-
----
-
-## 🗄️ HDFS Setup
+Download and extract:
 
 ```bash
-hdfs dfs -mkdir /data
-hdfs dfs -mkdir /data/amazon_book_reviews
+mkdir -p ~/datasets/books
+unzip amazon-books-reviews.zip -d ~/datasets/books
+```
 
-hdfs dfs -put /mnt/c/Users/shrut/Downloads/Books_rating.csv /data/amazon_book_reviews
-hdfs dfs -put /mnt/c/Users/shrut/Downloads/books_data.csv /data/amazon_book_reviews
-hdfs dfs -put /mnt/c/Users/shrut/Downloads/amazon_books_merged.csv /data/amazon_book_reviews
+Upload to HDFS:
+
+```bash
+hdfs dfs -mkdir -p /data/amazon_book_reviews
+hdfs dfs -put ~/datasets/books/*.csv /data/amazon_book_reviews
 ```
 
 ---
 
-## 🐍 Python Environment Setup
+## 🗂 Required CSVs in HDFS
+
+| File                    | Purpose          |
+| ----------------------- | ---------------- |
+| Books_rating.csv        | User ratings     |
+| books_data.csv          | Book metadata    |
+| amazon_books_merged.csv | Combined dataset |
+
+Ensure they exist:
+
+```bash
+hdfs dfs -ls /data/amazon_book_reviews
+```
+
+---
+
+## 🔐 Google Books API Setup (Required for Description Enrichment)
+
+1. Go to Google Cloud Console
+   [https://console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+
+2. Create an **API Key**
+
+3. Enable:
+   ✅ **Books API**
+
+4. Save the key permanently to your shell profile:
+
+```bash
+echo 'export GOOGLE_BOOKS_API="<YOUR_API_KEY_HERE>"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Confirm:
+
+```bash
+echo $GOOGLE_BOOKS_API
+```
+
+This environment variable is automatically used by `enrich_desc.py` and `content-filter.py`.
+
+---
+
+## 🖥️ Python Environment Setup
 
 ```bash
 python3 -m venv pyenv
 source pyenv/bin/activate
 
 pip install --upgrade pip
-pip install pyspark nltk pandas numpy scikit-learn tqdm vaderSentiment
+pip install pyspark nltk pandas numpy scikit-learn tqdm vaderSentiment flask
 ```
 
 ---
 
-## 🔀 Data Pipeline
+## 🧱 Hadoop + HDFS Setup (WSL Users)
 
-### 1️⃣ Merge Datasets
+Follow this guide:
+
+🔗 [https://dev.to/samujjwaal/hadoop-installation-on-windows-10-using-wsl-2ck1](https://dev.to/samujjwaal/hadoop-installation-on-windows-10-using-wsl-2ck1)
+
+Start Hadoop:
 
 ```bash
-nano merge.py
+start-dfs.sh
+start-yarn.sh
+```
+
+Check:
+
+```bash
+hdfs dfs -ls /
+```
+
+---
+
+## 🔀 Data Processing Pipeline
+
+### 1️⃣ Merge
+
+```bash
 spark-submit merge.py
 ```
 
 ### 2️⃣ Preprocess
 
 ```bash
-nano preprocessv1.py
 spark-submit preprocessv1.py
 ```
 
-### 3️⃣ Sentiment Analysis
+### 3️⃣ Sentiment Scoring
 
 ```bash
-nano amazon_books_sentiment.py
 spark-submit amazon_books_sentiment.py
 ```
 
-### 4️⃣ Final Preprocessing
+### 4️⃣ Final Cleanup
 
 ```bash
-nano finalpreprocess.py
 spark-submit finalpreprocess.py
 ```
 
@@ -105,7 +142,6 @@ spark-submit finalpreprocess.py
 ## 🤝 Collaborative Filtering
 
 ```bash
-nano colab-filter.py
 spark-submit colab-filter.py
 ```
 
@@ -113,31 +149,27 @@ spark-submit colab-filter.py
 
 ## 📖 Content-Based Filtering
 
-### (Run once to fill missing descriptions)
+### (Run once to enrich descriptions using Google Books API)
 
 ```bash
-nano enrich_desc.py
 spark-submit enrich_desc.py
 ```
 
-### Run Recommender
+### Run recommender:
 
 ```bash
-nano content-filter.py
-spark-submit content-filter.py "BOOK_NAME"
+spark-submit content-filter.py "Harry Potter"
 ```
 
 ---
 
 ## 🌐 Web UI
 
-Start the interface:
-
 ```bash
 python3 app.py
 ```
 
-Then open:
+Open in browser:
 
 ```
 http://localhost:5000
@@ -148,33 +180,23 @@ http://localhost:5000
 ## 📂 Project Structure
 
 ```
-├── app.py                       # Flask Web UI
-├── colab-filter.py              # Collaborative Filtering Model
-├── content-filter.py            # Content-Based Model
-├── enrich_desc.py               # One-time description enrichment
-├── preprocessv1.py              # Initial cleaning
-├── amazon_books_sentiment.py    # Sentiment scoring
-├── finalpreprocess.py           # Final dataset formatting
-├── merge.py                     # Dataset merging
-├── templates/                   # HTML UI files
-└── logs/ & results/             # Saved outputs
+├── app.py                        # Flask UI
+├── colab-filter.py               # Collaborative filtering model
+├── content-filter.py             # Content-based recommendations
+├── enrich_desc.py                # Google Books description enrichment
+├── preprocessv1.py
+├── amazon_books_sentiment.py
+├── finalpreprocess.py
+├── merge.py
+├── templates/                    # UI HTML
+├── logs/                         # Saved logs
+└── results/                      # Stored responses
 ```
 
 ---
 
-## 🎯 Demo Output Examples
+## Author
 
-| Mode          | Example Result                                                                    |
-| ------------- | --------------------------------------------------------------------------------- |
-| Collaborative | “Users similar to you loved *The Hobbit*, *Eragon*, *Percy Jackson*...”           |
-| Content-Based | “Books similar to *Harry Potter* → *Percy Jackson*, *The Magicians*, *Narnia*...” |
-
----
-
-## ❤️ Author
-
-Shruti
+Shruti S
 
 If you found this useful, ⭐ star the repo!
-
----
