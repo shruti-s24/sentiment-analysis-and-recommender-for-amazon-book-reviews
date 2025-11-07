@@ -1,6 +1,6 @@
 ---
 
-# 📚 Book Recommendation System (Hadoop + Spark + Flask UI)
+# Book Recommendation System (Hadoop + Spark + Flask UI)
 
 **Book Recommendation System** built using:
 
